@@ -14,35 +14,60 @@ namespace GenLibraryList
     class Program
     {
         // ReSharper disable once AsyncConverter.AsyncMethodNamingHighlighting
-        public static async Task Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
-            var slnFilePath = "";
-            var outputFile = "";
+            try
             {
-                var options = new OptionSet
+                var slnFilePath = "";
+                var externalList = "";
+                var outputFile = "";
                 {
-                    {"sln=", "Visual Studio solution file.", v => slnFilePath = v},
-                    {"output=", "Output file.", v => outputFile = v}
-                };
-                options.Parse(args);
-            }
+                    var options = new OptionSet
+                    {
+                        {"sln=", "Visual Studio solution file.", v => slnFilePath = v},
+                        {"external=", "External libraries url list file.", v => externalList = v},
+                        {"output=", "Output file.", v => outputFile = v}
+                    };
+                    options.Parse(args);
+                }
 
-            var libraries = new ConcurrentBag<Library>();
+                var libraries = new ConcurrentBag<Library>();
+                {
+                    if (string.IsNullOrEmpty(externalList) == false && File.Exists(externalList))
+                    {
+                        var urls = File.ReadAllLines(externalList).Where(x => string.IsNullOrEmpty(x) == false);
+
+                        await urls.ForEachAsync(async x =>
+                        {
+                            libraries.Add(await GithubPackageGenerator.MakeAsync(x).ConfigureAwait(false));
+                        }).ConfigureAwait(false);
+                    }
+
+                    {
+                        var nugetIds = await MakeNugetPackageIdsAsync(slnFilePath).ConfigureAwait(false);
+                        await nugetIds.ForEachAsync(async x =>
+                        {
+                            libraries.Add(await NugetPackageGenerator.MakeAsync(x).ConfigureAwait(false));
+                        }).ConfigureAwait(false);
+                    }
+
+                }
+
+                var json = JsonConvert.SerializeObject(libraries.OrderBy(x => x.Name), Formatting.Indented);
+
+                if (string.IsNullOrEmpty(outputFile))
+                    Console.WriteLine(json);
+                else
+                    File.WriteAllText(outputFile, json);
+
+                return 0;
+            }
+            catch (Exception e)
             {
-                var nugetIds = await MakeNugetPackageIdsAsync(slnFilePath).ConfigureAwait(false);
+                Console.WriteLine(e);
 
-                await nugetIds.ForEachAsync(async x =>
-                {
-                    libraries.Add(await Generator.MakeNugetPackageAsync(x).ConfigureAwait(false));
-                }).ConfigureAwait(false);
+                return 1;
             }
-
-            var json = JsonConvert.SerializeObject(libraries.OrderBy(x => x.Name), Formatting.Indented);
-
-            if (string.IsNullOrEmpty(outputFile))
-                Console.WriteLine(json);
-            else
-                File.WriteAllText(outputFile, json);
         }
 
         private static async Task<string[]> MakeNugetPackageIdsAsync(string slnFilePath)

@@ -5,17 +5,17 @@ using Newtonsoft.Json;
 
 namespace GenLibraryList
 {
-    internal class Generator
+    internal class NugetPackageGenerator
     {
-        private static readonly HttpClient _client = new HttpClient();
+        private static readonly HttpClient _httpClient = new HttpClient();
 
-        internal static async Task<Library> MakeNugetPackageAsync(string id)
+        internal static async Task<Library> MakeAsync(string id)
         {
             var url = $"http://api-v2v3search-0.nuget.org/query?q={id}";
 
-            var jsonText = await _client.GetStringAsync(url).ConfigureAwait(false);
-            var json = JsonConvert.DeserializeObject<Rootobject>(jsonText);
-            var data = json.data.Single(x => x.id == id);
+            var jsonText = await _httpClient.GetStringAsync(url).ConfigureAwait(false);
+            var rootObject = JsonConvert.DeserializeObject<Rootobject>(jsonText);
+            var data = rootObject.data.Single(x => x.id == id);
 
             return new Library
             {
@@ -27,12 +27,14 @@ namespace GenLibraryList
         }
 
         // ReSharper disable once IdentifierTypo
-        public class Rootobject
+        // ReSharper disable once ClassNeverInstantiated.Local
+        private class Rootobject
         {
             public Datum[] data { get; set; }
         }
 
-        public class Datum
+        // ReSharper disable once ClassNeverInstantiated.Local
+        private class Datum
         {
             public string id { get; set; }
             public string description { get; set; }
