@@ -1,6 +1,6 @@
 ﻿namespace GenLibraryList
 {
-    public class OpenSource
+    public class Library
     {
         public string Name { get; set; }
         public string Author { get; set; }
