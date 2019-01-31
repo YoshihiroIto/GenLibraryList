@@ -22,7 +22,7 @@ namespace GenLibraryList
                 Name = data.title,
                 Author = string.Join(" ", data.authors),
                 Summary = string.IsNullOrEmpty(data.summary) ? data.description : data.summary,
-                Url = data.projectUrl
+                Url = data.projectUrl ?? "https://www.nuget.org/packages/" + id
             };
         }
 
