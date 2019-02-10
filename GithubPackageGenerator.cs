@@ -29,7 +29,7 @@ namespace GenLibraryList
 
         internal static async Task<Library> MakeAsync(string url)
         {
-            var parts = url.Split("/");
+            var parts = url.Split('/');
 
             var owner = parts[parts.Length - 2];
             var name = parts[parts.Length - 1];
